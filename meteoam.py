@@ -57,6 +57,19 @@ class Weather:
     def to_text(self):
         return ["Coperto","Coperto con foschia","Coperto con nebbia","Coperto con neve","Coperto con pioggia","Coperto con temporali","Foschia","Fumo","Molto nuvoloso","Molto nuvoloso con foschia","Molto nuvoloso con nebbia","Molto nuvoloso con neve","Molto nuvoloso con pioggia","Molto nuvoloso con temporali","Nebbia","Neve","Nuvoloso","Nuvoloso con foschia","Nuvoloso con nebbia","Nuvoloso con neve","Nuvoloso con pioggia","Nuvoloso con temporali","Pioggia","Poco nuvoloso","Poco nuvoloso con foschia","Poco nuvoloso con nebbia","Poco nuvoloso con neve","Poco nuvoloso con pioggia","Poco nuvoloso con temporali","Sabbia","Sabbia e polvere","Sereno","Sereno con foschia","Sereno con nebbia","Sereno con neve","Sereno con pioggia","Sereno con temporali","Sollevamento neve","Temporali"][self.w_id]
 
+class Period:
+    weather = None
+    hour_start = 0
+    hour_end = 0
+ 
+    def __init__(self, weather, hour_start, hour_end = None):
+        self.weather = weather
+        self.hour_start = hour_start
+        self.hour_end = hour_end
+
+    def string(self):
+        return("Dalle ore " + str(self.hour_start) + " e' previsto tempo " + self.weather + ". ")
+
 class MeteoAM:
     place_id = None
     def __init__(self, place):
@@ -106,3 +119,34 @@ class MeteoAM:
                    if(max_pct < r):
                        max_pct = r
         return(max_pct)
+
+    def alexa_today(self):
+        dati = self.forecast_24h()
+        temp_min = 99999
+        temp_max = -99999
+        periods = []
+        for t in dati:
+           if(datetime.now().day == t['date'].day):
+              if(temp_min > t['temperature']):
+                 temp_min = int(t['temperature'])
+              if(temp_max < t['temperature']):
+                 temp_max = int(t['temperature'])
+              p = Period(t['weather'], t['date'].hour)
+              if(len(periods) == 0):
+                 periods.append(p)
+              elif(periods[len(periods)-1].weather == p.weather):
+                 periods[len(periods)-1].hour_end = p.hour_start
+              else:
+                 periods[len(periods)-1].hour_end = p.hour_start
+                 periods.append(p)
+              #print(t)
+
+        full_string = ""
+        for p in periods:
+           if(p != None):
+              full_string = full_string + p.string()
+        temp_string = ""
+        if(temp_min != temp_max):
+           temp_string = "La temperatura minima oggi sara' di " + str(temp_min) + " gradi, mentre quella massima sara' di " + str(temp_max) + " gradi centigradi."
+        full_string = full_string + temp_string
+        return full_string

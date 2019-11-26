@@ -72,11 +72,12 @@ class Period:
 
 class MeteoAM:
     place_id = None
+    nome = ""
     def __init__(self, place):
         if type(place) is str:
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
             localita = json.loads(response.text, object_pairs_hook=collections.OrderedDict)
-            nome = list(localita.values())[0]
+            self.nome = list(localita.values())[0]
             response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+list(localita.keys())[0]+"&form_id=ricerca_localita_form", headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
             self.place_id = response.headers["Location"].split('/')[-2]
         else:
@@ -141,7 +142,7 @@ class MeteoAM:
                  periods.append(p)
               #print(t)
 
-        full_string = ""
+        full_string = "A " + self.nome  + " "
         for p in periods:
            if(p != None):
               full_string = full_string + p.string()

@@ -149,5 +149,7 @@ class MeteoAM:
         temp_string = ""
         if(temp_min != temp_max):
            temp_string = "La temperatura minima oggi sara' di " + str(temp_min) + " gradi, mentre quella massima sara' di " + str(temp_max) + " gradi centigradi."
+        else:
+           temp_string = "La temperatura sara' stabile intorno ai " + str(temp_min) + " gradi."
         full_string = full_string + temp_string
         return full_string

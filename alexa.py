@@ -1,5 +1,8 @@
 import sys
 from meteoam import *
 
-w = MeteoAM(sys.argv[1])
-print(w.alexa_today())
+try:
+   w = MeteoAM(sys.argv[1])
+   print(w.alexa_today())
+except:
+   print("Non ho trovato la citta' " + sys.argv[1] + ". Mi spiace.")

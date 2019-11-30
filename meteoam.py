@@ -2,6 +2,7 @@
 
 import collections
 from datetime import datetime
+from datetime import timedelta  
 import json
 import requests
 import re
@@ -61,11 +62,13 @@ class Period:
     weather = None
     hour_start = 0
     hour_end = 0
- 
-    def __init__(self, weather, hour_start, hour_end = None):
+    day = None
+
+    def __init__(self, weather, day, hour_start, hour_end = None):
         self.weather = weather
         self.hour_start = hour_start
         self.hour_end = hour_end
+        self.day = day
 
     def string(self):
         return("Dalle ore " + str(self.hour_start) + " è previsto tempo " + self.weather + "; ")
@@ -77,7 +80,7 @@ class MeteoAM:
         if type(place) is str:
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
             localita = json.loads(response.text, object_pairs_hook=collections.OrderedDict)
-            self.nome = list(localita.values())[0]
+            self.nome = list(localita.keys())[0]
             response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+list(localita.keys())[0]+"&form_id=ricerca_localita_form", headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
             self.place_id = response.headers["Location"].split('/')[-2]
         else:
@@ -94,9 +97,10 @@ class MeteoAM:
     def forecast_daily(self):
         dow = {"Lun": 1, "Mar": 2, "Mer": 3, "Gio": 4, "Ven": 5, "Sab": 6, "Dom": 0}
         response = requests.request("GET", "http://www.meteoam.it/widget/localita/"+str(self.place_id), headers={'User-Agent': 'pymeteoam'})
+        print(response.text)
         soup = BeautifulSoup(response.text, 'html.parser')
         return {
-            "place": soup.find("h3").find("a").text.capitalize(), "forecast": [(lambda x: {"day_of_week": dow[x[0].text], "extreme_weather": x[1].find("img")["alt"] if x[1].find("img") is not None else None, "weather": x[2].find("img")["alt"], "min_t": float(x[3].text.encode("utf-8").replace("°",'')), "max_t": float(x[4].text.encode("utf-8").replace("°",'')), "wind": x[5].find(attrs={"class":"badge"})["title"]})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
+            "place": soup.find("h3").find("a").text.capitalize(), "forecast": [(lambda x: {"weekday": dow[x[0].text], "extreme_weather": x[1].find("img")["alt"] if x[1].find("img") is not None else None, "weather": x[2].find("img")["alt"], "min_t": float(x[3].text.encode("utf-8").replace("°",'')), "max_t": float(x[4].text.encode("utf-8").replace("°",'')), "wind": x[5].find(attrs={"class":"badge"})["title"]})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
 
     def prob_rain_today(self):
         response = requests.request("GET", "http://www.meteoam.it/ta/previsione/" + str(self.place_id), headers={'User-Agent': 'pymeteoam'})
@@ -132,10 +136,11 @@ class MeteoAM:
                  temp_min = int(t['temperature'])
               if(temp_max < t['temperature']):
                  temp_max = int(t['temperature'])
-              p = Period(t['weather'], t['date'].hour)
+           if(datetime.now().day == t['date'].day or (datetime.now() + timedelta(days=1)).day  == t['date'].day):
+              p = Period(t['weather'], t['date'].day, t['date'].hour)
               if(len(periods) == 0):
                  periods.append(p)
-              elif(periods[len(periods)-1].weather == p.weather):
+              elif(periods[len(periods)-1].weather == p.weather and periods[len(periods)-1].day == p.day):
                  periods[len(periods)-1].hour_end = p.hour_start
               else:
                  periods[len(periods)-1].hour_end = p.hour_start
@@ -143,13 +148,17 @@ class MeteoAM:
               #print(t)
 
         full_string = "A " + self.nome  + " "
+        last_hour = None
         for p in periods:
            if(p != None):
+              if(last_hour != None and last_hour > p.hour_start):
+                 temp_string = ""
+                 if(temp_min != temp_max):
+                    temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " gradi, mentre quella massima sarà di " + str(temp_max) + " gradi centigradi."
+                 else:
+                    temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " gradi."
+                 full_string = full_string + temp_string
+                 full_string = full_string + "Per domani "
+              last_hour = p.hour_start
               full_string = full_string + p.string()
-        temp_string = ""
-        if(temp_min != temp_max):
-           temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " gradi, mentre quella massima sarà di " + str(temp_max) + " gradi centigradi."
-        else:
-           temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " gradi."
-        full_string = full_string + temp_string
         return full_string

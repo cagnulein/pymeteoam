@@ -68,7 +68,7 @@ class Period:
         self.hour_end = hour_end
 
     def string(self):
-        return("Dalle ore " + str(self.hour_start) + " e' previsto tempo " + self.weather + ". ")
+        return("Dalle ore " + str(self.hour_start) + " è previsto tempo " + self.weather + "; ")
 
 class MeteoAM:
     place_id = None

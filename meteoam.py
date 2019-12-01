@@ -147,7 +147,7 @@ class MeteoAM:
                  periods.append(p)
               #print(t)
 
-        full_string = "A " + self.nome  + " "
+        full_string = "A " + self.nome  + " per oggi "
         last_hour = None
         for p in periods:
            if(p != None):
@@ -158,7 +158,7 @@ class MeteoAM:
                  else:
                     temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " gradi."
                  full_string = full_string + temp_string
-                 full_string = full_string + "Per domani "
+                 full_string = full_string + " Per domani "
               last_hour = p.hour_start
               full_string = full_string + p.string()
         return full_string

@@ -142,6 +142,8 @@ class MeteoAM:
         temp_min = 99999
         temp_max = -99999
         periods = []
+        p_for_today = 0
+        p_for_tomorrow = 0
         for t in dati:
            if(datetime.now().day == t['date'].day):
               if(temp_min > t['temperature']):
@@ -159,8 +161,15 @@ class MeteoAM:
                  periods.append(p)
               #print(t)
 
+        for p in periods:
+           if(p.day == datetime.now().day):
+              p_for_today = p_for_today + 1
+           else:
+              p_for_tomorrow = p_for_tomorrow + 1
+
         full_string = "A " + self.nome  + " per oggi "
         last_hour = None
+        oggi = True
         for p in periods:
            if(p != None):
               if(last_hour != None and last_hour > p.hour_start):
@@ -176,6 +185,12 @@ class MeteoAM:
                     temp_string = temp_string + " Oggi non sono previste precipitazioni, puoi lasciare l'ombrello a casa!" 
                  full_string = full_string + temp_string
                  full_string = full_string + " Per domani "
+                 oggi = False
               last_hour = p.hour_start
-              full_string = full_string + p.string()
+              if(oggi and p_for_today == 1):
+                 full_string = full_string + "è previsto tempo " + p.weather + "; "
+              elif(oggi == False and p_for_tomorrow == 1):
+                 full_string = full_string + "è previsto tempo " + p.weather + "; "
+              else:
+                 full_string = full_string + p.string()
         return full_string

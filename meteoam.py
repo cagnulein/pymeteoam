@@ -127,6 +127,16 @@ class MeteoAM:
                        max_pct = r
         return(max_pct)
 
+    def similar_condition(self, a, b):
+        if(a.find("pioggia") > 0):
+           return (b.find("pioggia") > 0)
+        elif(a.find("temporale") > 0):
+           return (b.find("temporale") > 0)
+        elif(a.find("neve") > 0):
+           return (b.find("neve") > 0)
+        else:
+           return (b.find("pioggia") < 0 and b.find("temporale") < 0 and b.find("neve") < 0)
+
     def alexa_today(self):
         dati = self.forecast_24h()
         temp_min = 99999
@@ -142,7 +152,7 @@ class MeteoAM:
               p = Period(t['weather'], t['date'].day, t['date'].hour)
               if(len(periods) == 0):
                  periods.append(p)
-              elif(periods[len(periods)-1].weather == p.weather and periods[len(periods)-1].day == p.day):
+              elif((periods[len(periods)-1].weather == p.weather or self.similar_condition(periods[len(periods)-1].weather, p.weather) ) and periods[len(periods)-1].day == p.day):
                  periods[len(periods)-1].hour_end = p.hour_start
               else:
                  periods[len(periods)-1].hour_end = p.hour_start
@@ -159,6 +169,11 @@ class MeteoAM:
                     temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " gradi, mentre quella massima sarà di " + str(temp_max) + " gradi centigradi."
                  else:
                     temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " gradi."
+                 rain = self.prob_rain_today()
+                 if(rain > 0):
+                    temp_string = temp_string + " C'è il " + str(rain) + "% di possibilità di pioggia per oggi. Prendi l'ombrello!"
+                 else:
+                    temp_string = temp_string + " Oggi non sono previste precipitazioni, puoi lasciare l'ombrello a casa!" 
                  full_string = full_string + temp_string
                  full_string = full_string + " Per domani "
               last_hour = p.hour_start

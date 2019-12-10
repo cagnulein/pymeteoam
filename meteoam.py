@@ -84,7 +84,10 @@ class MeteoAM:
                 if(place.capitalize() == l.capitalize()):
                    self.nome = l
             response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+self.nome+"&form_id=ricerca_localita_form", headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
-            self.place_id = response.headers["Location"].split('/')[-2]
+            if(response.headers["Location"].find("disambiguazione")>0):
+                 raise Exception('An error occurred')
+            else:
+                 self.place_id = response.headers["Location"].split('/')[-2]
         else:
             self.place_id = place
 

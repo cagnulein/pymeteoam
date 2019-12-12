@@ -154,6 +154,12 @@ class MeteoAM:
         elif(temp_min < 20):
            return "Mettiti una giacca!"
 
+    def gradi(self, gradi):
+        if(abs(gradi)==1):
+           return "grado"
+        else:
+           return "gradi"
+
     def alexa_today(self):
         dati = self.forecast_24h()
         temp_min = 99999
@@ -193,9 +199,9 @@ class MeteoAM:
               if(last_hour != None and last_hour > p.hour_start):
                  temp_string = ""
                  if(temp_min != temp_max):
-                    temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " gradi, mentre quella massima sarà di " + str(temp_max) + " gradi centigradi."
+                    temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " " + self.gradi(temp_min) + ", mentre quella massima sarà di " + str(temp_max) + " " + self.gradi(temp_max)  +" centigradi."
                  else:
-                    temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " gradi."
+                    temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " " + self.gradi(temp_min) + "."
                  temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min, temp_max)
                  rain = self.prob_rain_days[0]
                  if(rain > 0):
@@ -215,8 +221,8 @@ class MeteoAM:
         if(oggi == False):
            rain = self.prob_rain_days[1]
            if(rain > 0):
-              full_string = full_string + "Per domani c'è il " + str(rain) + "% di possibilità di pioggia."
+              full_string = full_string + "Per domani c'è il " + str(rain) + "% di possibilità di pioggia. "
            else:
-              full_string = full_string + "Per domani non sono previste precipitazioni"
+              full_string = full_string + "Per domani non sono previste precipitazioni. "
 
-        return full_string
+        return full_string + "Buona giornata e buone feste da Roberto Viola!"

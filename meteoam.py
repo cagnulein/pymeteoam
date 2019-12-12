@@ -76,6 +76,7 @@ class Period:
 class MeteoAM:
     place_id = None
     nome = ""
+    prob_rain_days = []
     def __init__(self, place):
         if type(place) is str:
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
@@ -107,7 +108,7 @@ class MeteoAM:
         return {
             "place": soup.find("h3").find("a").text.capitalize(), "forecast": [(lambda x: {"weekday": dow[x[0].text], "extreme_weather": x[1].find("img")["alt"] if x[1].find("img") is not None else None, "weather": x[2].find("img")["alt"], "min_t": float(x[3].text.encode("utf-8").replace("°",'')), "max_t": float(x[4].text.encode("utf-8").replace("°",'')), "wind": x[5].find(attrs={"class":"badge"})["title"]})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
 
-    def prob_rain_today(self):
+    def prob_rain(self):
         response = requests.request("GET", "http://www.meteoam.it/ta/previsione/" + str(self.place_id), headers={'User-Agent': 'pymeteoam'})
         soup = BeautifulSoup(response.text, 'html.parser')
         temp = soup.find_all("tr")
@@ -119,7 +120,8 @@ class MeteoAM:
                current_hour = int((hour.string[9:11]))
                #controllo che questo dato di pioggia non sia del giorno successivo
                if(last_hour > current_hour):
-                  return(max_pct)
+                  self.prob_rain_days.append(max_pct)
+                  max_pct = 0
                last_hour = current_hour
             td = t.find_all("td")
             if(len(td)):
@@ -128,7 +130,7 @@ class MeteoAM:
                    r = int(rain.string[4:-6])
                    if(max_pct < r):
                        max_pct = r
-        return(max_pct)
+        self.prob_rain_days.append(max_pct)
 
     def similar_condition(self, a, b):
         if(a.find("pioggia") > 0):
@@ -139,6 +141,18 @@ class MeteoAM:
            return (b.find("neve") > 0)
         else:
            return (b.find("pioggia") < 0 and b.find("temporale") < 0 and b.find("neve") < 0)
+
+    def alexa_temperature_phrases(self, temp_min, temp_max):
+        if(temp_min < 0):
+           return "Spargi il sale sul vialetto!"
+        elif(temp_min < 5):
+           return "Mettiti i guanti!"
+        elif(temp_min < 10):
+           return "Mettiti la berretta!"
+        elif(temp_min < 15):
+           return "Mettiti una sciarpina!"
+        elif(temp_min < 20):
+           return "Mettiti una giacca!"
 
     def alexa_today(self):
         dati = self.forecast_24h()
@@ -173,6 +187,7 @@ class MeteoAM:
         full_string = "A " + self.nome  + " per oggi "
         last_hour = None
         oggi = True
+        self.prob_rain()
         for p in periods:
            if(p != None):
               if(last_hour != None and last_hour > p.hour_start):
@@ -181,7 +196,8 @@ class MeteoAM:
                     temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " gradi, mentre quella massima sarà di " + str(temp_max) + " gradi centigradi."
                  else:
                     temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " gradi."
-                 rain = self.prob_rain_today()
+                 temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min, temp_max)
+                 rain = self.prob_rain_days[0]
                  if(rain > 0):
                     temp_string = temp_string + " C'è il " + str(rain) + "% di possibilità di pioggia per oggi. Prendi l'ombrello!"
                  else:
@@ -196,4 +212,11 @@ class MeteoAM:
                  full_string = full_string + "è previsto tempo " + p.weather + "; "
               else:
                  full_string = full_string + p.string()
+        if(oggi == False):
+           rain = self.prob_rain_days[1]
+           if(rain > 0):
+              full_string = full_string + "Per domani c'è il " + str(rain) + "% di possibilità di pioggia."
+           else:
+              full_string = full_string + "Per domani non sono previste precipitazioni"
+
         return full_string

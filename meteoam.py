@@ -199,7 +199,7 @@ class MeteoAM:
               if(last_hour != None and last_hour > p.hour_start):
                  temp_string = ""
                  if(temp_min != temp_max):
-                    temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " " + self.gradi(temp_min) + ", mentre quella massima sarà di " + str(temp_max) + " " + self.gradi(temp_max)  +" centigradi."
+                    temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " " + self.gradi(temp_min) + ", mentre quella massima sarà di " + str(temp_max) + " " + self.gradi(temp_max)  +" centi" + self.gradi(temp_max)  + "."
                  else:
                     temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " " + self.gradi(temp_min) + "."
                  temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min, temp_max)

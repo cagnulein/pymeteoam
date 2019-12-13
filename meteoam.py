@@ -160,6 +160,12 @@ class MeteoAM:
         else:
            return "gradi"
 
+    def articolo_percentuale(self, perc):
+        if(perc < 90 and perc > 79):
+           return "l'"
+        else:
+           return "il "
+
     def alexa_today(self):
         dati = self.forecast_24h()
         temp_min = 99999
@@ -205,7 +211,7 @@ class MeteoAM:
                  temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min, temp_max)
                  rain = self.prob_rain_days[0]
                  if(rain > 0):
-                    temp_string = temp_string + " C'è il " + str(rain) + "% di possibilità di pioggia per oggi. Prendi l'ombrello!"
+                    temp_string = temp_string + " C'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia per oggi: prendi l'ombrello!"
                  else:
                     temp_string = temp_string + " Oggi non sono previste precipitazioni, puoi lasciare l'ombrello a casa!" 
                  full_string = full_string + temp_string
@@ -221,7 +227,7 @@ class MeteoAM:
         if(oggi == False):
            rain = self.prob_rain_days[1]
            if(rain > 0):
-              full_string = full_string + "Per domani c'è il " + str(rain) + "% di possibilità di pioggia. "
+              full_string = full_string + "Per domani c'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia. "
            else:
               full_string = full_string + "Per domani non sono previste precipitazioni. "
 

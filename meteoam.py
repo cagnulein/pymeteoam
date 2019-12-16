@@ -77,8 +77,35 @@ class MeteoAM:
     place_id = None
     nome = ""
     prob_rain_days = []
+
+    ask_today = True
+    ask_tomorrow = True
+    ask_rain = True
+    ask_temperature = True
+    ask_condition = True
+
     def __init__(self, place):
         if type(place) is str:
+            if(place.find('oggi ') >= 0):
+                self.ask_today = True
+                self.ask_tomorrow = False
+                place = place.replace("oggi ", "")
+            elif(place.find('domani ') >= 0):
+                self.ask_today = False
+                self.ask_tomorrow = True
+                place = place.replace("domani ", "")
+            if(place.find('temperatura ') >= 0):
+                self.ask_temperature = True
+                self.ask_rain = False
+                self.ask_condition = False
+                place = place.replace("temperatura ", "")
+            if(place.find('piove ') >= 0):
+                self.ask_temperature = False
+                self.ask_rain = True
+                self.ask_condition = False
+                place = place.replace("piove ", "")
+
+            place = place.strip()
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
             localita = json.loads(response.text, object_pairs_hook=collections.OrderedDict)
             for l in list(localita.keys()):
@@ -166,19 +193,35 @@ class MeteoAM:
         else:
            return "il "
 
+    def feste(self):
+        if(datetime.now().day == 25 and datetime.now().month == 12):
+           return " e buone natale"
+        elif(datetime.now().day == 1 and datetime.now().month == 1):
+           return " e buon anno"
+        elif(datetime.now().day == 6 and datetime.now().month == 1):
+           return " e buona befana"
+        elif((datetime.now().day >=8 and datetime.now().month == 12) or (datetime.now().day <=6 and datetime.now().month == 1)):
+           return " e buone feste"
+        return ""
+
     def alexa_today(self):
         dati = self.forecast_24h()
-        temp_min = 99999
-        temp_max = -99999
+        temp_min = [99999, 99999]
+        temp_max = [-99999, -99999]
         periods = []
         p_for_today = 0
         p_for_tomorrow = 0
         for t in dati:
            if(datetime.now().day == t['date'].day):
-              if(temp_min > t['temperature']):
-                 temp_min = int(t['temperature'])
-              if(temp_max < t['temperature']):
-                 temp_max = int(t['temperature'])
+              if(temp_min[0] > t['temperature']):
+                 temp_min[0] = int(t['temperature'])
+              if(temp_max[0] < t['temperature']):
+                 temp_max[0] = int(t['temperature'])
+           elif(datetime.now().day + 1 == t['date'].day):
+              if(temp_min[1] > t['temperature']):
+                 temp_min[1] = int(t['temperature'])
+              if(temp_max[1] < t['temperature']):
+                 temp_max[1] = int(t['temperature'])
            if(datetime.now().day == t['date'].day or (datetime.now() + timedelta(days=1)).day  == t['date'].day):
               p = Period(t['weather'], t['date'].day, t['date'].hour)
               if(len(periods) == 0):
@@ -196,7 +239,9 @@ class MeteoAM:
            else:
               p_for_tomorrow = p_for_tomorrow + 1
 
-        full_string = "A " + self.nome  + " per oggi "
+        full_string = "A " + self.nome + " "
+        if(self.ask_condition and self.ask_today):
+           full_string = full_string + " per oggi "
         last_hour = None
         oggi = True
         self.prob_rain()
@@ -204,31 +249,44 @@ class MeteoAM:
            if(p != None):
               if(last_hour != None and last_hour > p.hour_start):
                  temp_string = ""
-                 if(temp_min != temp_max):
-                    temp_string = "La temperatura minima oggi sarà di " + str(temp_min) + " " + self.gradi(temp_min) + ", mentre quella massima sarà di " + str(temp_max) + " " + self.gradi(temp_max)  +" centi" + self.gradi(temp_max)  + "."
-                 else:
-                    temp_string = "La temperatura sarà stabile intorno ai " + str(temp_min) + " " + self.gradi(temp_min) + "."
-                 temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min, temp_max)
+                 if(self.ask_temperature and self.ask_today):
+                    if(temp_min[0] != temp_max[0]):
+                       temp_string = "La temperatura minima oggi sarà di " + str(temp_min[0]) + " " + self.gradi(temp_min[0]) + ", mentre quella massima sarà di " + str(temp_max[0]) + " " + self.gradi(temp_max[0])  +" centi" + self.gradi(temp_max[0])  + "."
+                    else:
+                       temp_string = "La temperatura oggi sarà stabile intorno ai " + str(temp_min[0]) + " " + self.gradi(temp_min[0]) + "."
+                    temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min[0], temp_max[0])
                  rain = self.prob_rain_days[0]
-                 if(rain > 0):
-                    temp_string = temp_string + " C'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia per oggi: prendi l'ombrello!"
-                 else:
-                    temp_string = temp_string + " Oggi non sono previste precipitazioni, puoi lasciare l'ombrello a casa!" 
+                 if(self.ask_rain and self.ask_today):
+                    if(rain > 0):
+                       temp_string = temp_string + " C'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia per oggi: prendi l'ombrello!"
+                    else:
+                       temp_string = temp_string + " Oggi non sono previste precipitazioni." 
                  full_string = full_string + temp_string
-                 full_string = full_string + " Per domani "
+                 if(self.ask_tomorrow and self.ask_condition):
+                    full_string = full_string + " Per domani "
                  oggi = False
               last_hour = p.hour_start
-              if(oggi and p_for_today == 1):
-                 full_string = full_string + "è previsto tempo " + p.weather + "; "
-              elif(oggi == False and p_for_tomorrow == 1):
-                 full_string = full_string + "è previsto tempo " + p.weather + "; "
+              if(self.ask_condition):
+                 if(oggi and p_for_today == 1 and self.ask_today):
+                    full_string = full_string + "è previsto tempo " + p.weather + "; "
+                 elif(oggi == False and p_for_tomorrow == 1 and self.ask_tomorrow):
+                    full_string = full_string + "è previsto tempo " + p.weather + "; "
+                 elif((oggi == True and self.ask_today) or (oggi == False and self.ask_tomorrow)):
+                    full_string = full_string + p.string()
+        if(oggi == False and self.ask_tomorrow):
+           temp_string = ""
+           if(self.ask_temperature):
+              if(temp_min[1] != temp_max[1]):
+                 temp_string = "La temperatura minima domani sarà di " + str(temp_min[1]) + " " + self.gradi(temp_min[1]) + ", mentre quella massima sarà di " + str(temp_max[1]) + " " + self.gradi(temp_max[1])  +" centi" + self.gradi(temp_max[1])  + ". "
               else:
-                 full_string = full_string + p.string()
-        if(oggi == False):
-           rain = self.prob_rain_days[1]
-           if(rain > 0):
-              full_string = full_string + "Per domani c'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia. "
-           else:
-              full_string = full_string + "Per domani non sono previste precipitazioni. "
+                 temp_string = "La temperatura domani sarà stabile intorno ai " + str(temp_min[1]) + " " + self.gradi(temp_min[1]) + ". "
+           full_string = full_string + temp_string
 
-        return full_string + "Buona giornata e buone feste da Roberto Viola!"
+           if(self.ask_rain):
+              rain = self.prob_rain_days[1]
+              if(rain > 0):
+                 full_string = full_string + "Per domani c'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia. "
+              else:
+                 full_string = full_string + "Per domani non sono previste precipitazioni. "
+
+        return full_string + "Buona giornata" + self.feste() + " da Roberto Viola!"

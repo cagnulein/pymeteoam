@@ -104,6 +104,7 @@ class MeteoAM:
                 self.ask_rain = True
                 self.ask_condition = False
                 place = place.replace("piove ", "")
+            place = place.replace("100", "cento")
 
             place = place.strip()
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})

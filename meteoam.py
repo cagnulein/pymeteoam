@@ -196,7 +196,7 @@ class MeteoAM:
 
     def feste(self):
         if(datetime.now().day == 25 and datetime.now().month == 12):
-           return " e buone natale"
+           return " e buon natale"
         elif(datetime.now().day == 1 and datetime.now().month == 1):
            return " e buon anno"
         elif(datetime.now().day == 6 and datetime.now().month == 1):

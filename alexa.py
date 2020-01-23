@@ -3,8 +3,29 @@ from meteoam import *
 
 found = False
 
+today = True
+tomorrow = True
+rain = True
+temperature = True
+condition = True
+
 try:
-   w = MeteoAM(sys.argv[1])
+   if(sys.argv[1].find('oggi ') >= 0):
+      today = True
+      tomorrow = False
+   elif(sys.argv[1].find('domani ') >= 0):
+      today = False
+      tomorrow = True
+   if(sys.argv[1].find('temperatura ') >= 0):
+      temperature = True
+      rain = False
+      condition = False
+   if(sys.argv[1].find('piove ') >= 0):
+      temperature = False
+      rain = True
+      condition = False
+
+   w = MeteoAM(sys.argv[1], today, tomorrow, rain, temperature, condition)
    print(w.alexa_today())
    found = True
 except:
@@ -13,7 +34,7 @@ except:
    else:
      for a in sys.argv[1].split():
        try:
-         w = MeteoAM(a)
+         w = MeteoAM(a, today, tomorrow, rain, temperature, condition)
          print(w.alexa_today())
          found = True
          break

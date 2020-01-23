@@ -84,26 +84,14 @@ class MeteoAM:
     ask_temperature = True
     ask_condition = True
 
-    def __init__(self, place):
+    def __init__(self, place, today, tomorrow, rain, temperature, condition):
+        self.ask_today = today
+        self.ask_tomorrow = tomorrow
+        self.ask_rain = rain
+        self.ask_temperature = temperature
+        self.ask_condition = condition
+
         if type(place) is str:
-            if(place.find('oggi ') >= 0):
-                self.ask_today = True
-                self.ask_tomorrow = False
-                place = place.replace("oggi ", "")
-            elif(place.find('domani ') >= 0):
-                self.ask_today = False
-                self.ask_tomorrow = True
-                place = place.replace("domani ", "")
-            if(place.find('temperatura ') >= 0):
-                self.ask_temperature = True
-                self.ask_rain = False
-                self.ask_condition = False
-                place = place.replace("temperatura ", "")
-            if(place.find('piove ') >= 0):
-                self.ask_temperature = False
-                self.ask_rain = True
-                self.ask_condition = False
-                place = place.replace("piove ", "")
             place = place.replace("100", "cento")
 
             place = place.strip()

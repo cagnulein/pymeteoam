@@ -191,7 +191,17 @@ class MeteoAM:
            return " e buona befana"
         elif((datetime.now().day >=8 and datetime.now().month == 12) or (datetime.now().day <=6 and datetime.now().month == 1)):
            return " e buone feste"
+        elif(datetime.now().weekday == 6):
+           return " e buona domenica"
         return ""
+
+    def giornata_serata(self):
+       if(datetime.now().hour < 16):
+          return "giornata"
+       elif(datetime.now().hour < 22):
+          return "serata"
+       else:
+          return "notte"
 
     def alexa_today(self):
         dati = self.forecast_24h()
@@ -278,4 +288,4 @@ class MeteoAM:
               else:
                  full_string = full_string + "Per domani non sono previste precipitazioni. "
 
-        return full_string + "Buona giornata" + self.feste() + " da Roberto Viola!"
+        return full_string + "Buona " + self.giornata_serata() + self.feste() + " da Roberto Viola!"

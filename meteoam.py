@@ -77,10 +77,12 @@ class MeteoAM:
     place_id = None
     nome = ""
     prob_rain_days = []
+    prob_wind_days = []
 
     ask_today = True
     ask_tomorrow = True
     ask_rain = True
+    ask_wind = True
     ask_temperature = True
     ask_condition = True
 
@@ -129,6 +131,7 @@ class MeteoAM:
         soup = BeautifulSoup(response.text, 'html.parser')
         temp = soup.find_all("tr")
         max_pct = 0
+        max_wind = 0
         last_hour = 0
         for t in temp:
             hour = re.search("[0-9][0-9]:[0-9][0-9]", str(t))
@@ -137,16 +140,26 @@ class MeteoAM:
                #controllo che questo dato di pioggia non sia del giorno successivo
                if(last_hour > current_hour):
                   self.prob_rain_days.append(max_pct)
+                  self.prob_wind_days.append(max_wind)
                   max_pct = 0
+                  max_wind = 0
                last_hour = current_hour
             td = t.find_all("td")
             if(len(td)):
                 rain = re.search("[0-9]*%", str(td[1]))
+                #31 km/h
+                if(len(td)>4):
+                   wind = re.search("([1-9][0-9]?[0-9]?) km\/h", str(td[4]))
                 if(rain):
                    r = int(rain.string[4:-6])
                    if(max_pct < r):
                        max_pct = r
+                if(wind):
+                   r = int(wind.group(0).split(" ")[0])
+                   if(max_wind < r):
+                       max_wind = r
         self.prob_rain_days.append(max_pct)
+        self.prob_wind_days.append(max_wind)
 
     def similar_condition(self, a, b):
         if(a.find("pioggia") > 0):
@@ -255,12 +268,15 @@ class MeteoAM:
                        temp_string = "La temperatura oggi sarà stabile intorno ai " + str(temp_min[0]) + " " + self.gradi(temp_min[0]) + "."
                     temp_string = temp_string + " " + self.alexa_temperature_phrases(temp_min[0], temp_max[0])
                  rain = self.prob_rain_days[0]
+                 wind = self.prob_wind_days[0]
                  if(self.ask_rain and self.ask_today):
                     if(rain > 0):
                        temp_string = temp_string + " C'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia per oggi: prendi l'ombrello!"
                     else:
-                       temp_string = temp_string + " Oggi non sono previste precipitazioni." 
+                       temp_string = temp_string + " Oggi non sono previste precipitazioni."
                  full_string = full_string + temp_string
+                 if(self.ask_wind and self.ask_today and wind > 25):
+                    full_string = full_string + " Oggi è previsto vento a " + str(wind) + " chilometri orari!"
                  if(self.ask_tomorrow and self.ask_condition):
                     full_string = full_string + " Per domani "
                  oggi = False
@@ -287,5 +303,8 @@ class MeteoAM:
                  full_string = full_string + "Per domani c'è " + self.articolo_percentuale(rain) + str(rain) + "% di possibilità di pioggia. "
               else:
                  full_string = full_string + "Per domani non sono previste precipitazioni. "
+           wind = self.prob_wind_days[1]
+           if(self.ask_wind and wind > 25):
+              full_string = full_string + " Per domani è previsto vento a " + str(wind) + " chilometri orari!"
 
         return full_string + "Buona " + self.giornata_serata() + self.feste() + " da Roberto Viola!"
